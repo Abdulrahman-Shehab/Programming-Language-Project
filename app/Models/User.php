@@ -50,38 +50,5 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Validation rules for user registration.
-     *
-     * @var array<string, string>
-     */
-    public const REGISTRATION_RULES = [
-        'first_name' => 'required|string|max:255',
-        'last_name' => 'required|string|max:255',
-        'phone' => 'required|string|unique:users,phone',
-        'birth_date' => 'required|date',
-        'password' => 'required|string|min:8|confirmed',
-        'profile_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-        'id_card' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-    ];
-
-    /**
-     * Validation rules for user login.
-     *
-     * @var array<string, string>
-     */
-    public const LOGIN_RULES = [
-        'phone' => 'required|string',
-        'password' => 'required|string'
-    ];
-
-    /**
-     * Get the user's full name.
-     */
-    protected function fullName(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->first_name . ' ' . $this->last_name,
-        );
-    }
+    
 }

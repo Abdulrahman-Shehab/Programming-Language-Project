@@ -22,7 +22,15 @@ class RegisterUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        return User::REGISTRATION_RULES;
+        return [
+        'first_name' => 'required|string|max:255',
+        'last_name' => 'required|string|max:255',
+        'phone' => 'required|string|unique:users,phone',
+        'birth_date' => 'required|date|date_format:Y-m-d',
+        'password' => 'required|string|min:8|confirmed',
+        'profile_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        'id_card' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+    ];
     }
 
     /**
