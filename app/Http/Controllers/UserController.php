@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Http\Requests\RegisterUserRequest;
 use App\Http\Requests\LoginUserRequest;
+use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -15,8 +16,6 @@ class UserController extends Controller
     // Register
     public function register(RegisterUserRequest $request)
     {
-        try {
-            // التحقق من وجود الصور قبل معالجتها
             $profilePath = null;
             $idCardPath = null;
 
@@ -40,21 +39,14 @@ class UserController extends Controller
 
             return response()->json([
                 'message' => 'Registration successful',
-                'user' => $user
+                'user' => new UserResource($user)
             ], 201);
-        } catch (\Exception $e) {
-            Log::error('Registration error: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Registration failed',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+
     }
 
     // Login
     public function login(LoginUserRequest $request)
     {
-        try {
             if (!Auth::attempt($request->only('phone', 'password'))) {
                 return response()->json(['message' => 'Invalid phone or password'], 401);
             }
@@ -64,69 +56,17 @@ class UserController extends Controller
 
             return response()->json([
                 'message' => 'Login successful',
-                'user' => $user,
+                'user' => new UserResource($user),
                 'token' => $token
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Login error: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Login failed',
-                'error' => $e->getMessage()
-            ], 500);
-        }
     }
 
     // Logout
     public function logout(Request $request)
     {
-        try {
             $request->user()->tokens()->delete();
 
             return response()->json(['message' => 'Logout successful']);
-        } catch (\Exception $e) {
-            Log::error('Logout error: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Logout failed',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
 
-
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
     }
 }

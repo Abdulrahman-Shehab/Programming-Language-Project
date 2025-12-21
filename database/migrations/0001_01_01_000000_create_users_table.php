@@ -13,8 +13,8 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('last_name');
             $table->string('phone')->unique(); // رقم الهاتف كنص
-            $table->string('profile_image');   // مسار الصورة
-            $table->string('id_card');         // مسار صورة الهوية
+            $table->string('profile_image')->nullable();   // مسار الصورة
+            $table->string('id_card')->nullable();         // مسار صورة الهوية
             $table->date('birth_date');
             $table->string('password');
             $table->rememberToken();
