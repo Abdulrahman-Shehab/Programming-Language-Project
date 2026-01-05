@@ -25,6 +25,7 @@ class User extends Authenticatable
         'profile_image',
         'id_card',
         'password',
+        'status',
     ];
 
     /**
@@ -47,8 +48,24 @@ class User extends Authenticatable
         return [
             'password' => 'hashed',
             'birth_date' => 'date',
+            'status' => 'string',
         ];
     }
 
-    
+    public function apartments()
+    {
+        return $this->hasMany(Apartment::class);
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class);
+    }
+
+
 }
