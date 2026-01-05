@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
+
+        $middleware->alias([
+            'admin.auth' => App\Http\Middleware\AdminAuth::class,
+            'check.user.status' => App\Http\Middleware\CheckUserStatus::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

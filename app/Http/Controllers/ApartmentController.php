@@ -3,216 +3,172 @@
 namespace App\Http\Controllers;
 
 use App\Models\Apartment;
-use App\Models\Governorate;
-use App\Models\City;
 use App\Http\Requests\StoreApartmentRequest;
 use App\Http\Requests\UpdateApartmentRequest;
 use App\Http\Resources\ApartmentResource;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+
 class ApartmentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
-        try {
-            $query = Apartment::with(['user', 'governorate', 'city']);
+        $query = Apartment::query();
 
-            // Filter by governorate
-            if ($request->has('governorate_id')) {
-                $query->where('governorate_id', $request->governorate_id);
-            }
-
-            // Filter by city
-            if ($request->has('city_id')) {
-                $query->where('city_id', $request->city_id);
-            }
-
-            // Filter by price range
-            if ($request->has('min_price')) {
-                $query->where('daily_price', '>=', $request->min_price);
-            }
-
-            if ($request->has('max_price')) {
-                $query->where('daily_price', '<=', $request->max_price);
-            }
-
-            // Search by title or description
-            if ($request->has('search')) {
-                $searchTerm = $request->search;
-                $query->where(function($q) use ($searchTerm) {
-                    $q->where('title', 'like', '%' . $searchTerm . '%')
-                      ->orWhere('description', 'like', '%' . $searchTerm . '%');
-                });
-            }
-
-            $apartments = $query->get();
-
-            return ApartmentResource::collection($apartments);
-        } catch (\Exception $e) {
-            Log::error('Error fetching apartments: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to fetch apartments'], 500);
+        // Filter by governorate if provided
+        if ($request->has('governorate_id')) {
+            $query->where('governorate_id', $request->governorate_id);
         }
-    }
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreApartmentRequest $request)
-    {
-        try {
-            $validatedData = $request->validated();
 
-            // Set the user_id to the authenticated user
-            $validatedData['user_id'] = auth()->user()->id;
+        // Filter by city if provided
+        if ($request->has('city_id')) {
+            $query->where('city_id', $request->city_id);
+        }
 
-            // Handle image uploads
-            for ($i = 1; $i <= 5; $i++) {
-                if ($request->hasFile('image' . $i)) {
-                    $validatedData['image' . $i] = $request->file('image' . $i)->store('apartments', 'public');
-                }
-            }
+        // Filter by search term if provided
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('address', 'like', "%{$search}%");
+            });
+        }
 
-            $apartment = Apartment::create($validatedData);
+        $apartments = $query->with(['governorate', 'city', 'user'])->get();
 
-            // Load relationships
-            $apartment->load(['user', 'governorate', 'city']);
-
+        if ($apartments->isEmpty()) {
             return response()->json([
-                'message' => 'تم إنشاء الشقة بنجاح',
-                'apartment' => new ApartmentResource($apartment)
-            ], 201);
-        } catch (\Exception $e) {
-            Log::error('Error creating apartment: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to create apartment'], 500);
-        }
-    }    /**
-     * Display the specified resource.
-     */
-    public function show(Apartment $apartment)
-    {
-        try {
-            $apartment->load(['user', 'governorate', 'city']);
-            return new ApartmentResource($apartment);
-        } catch (\Exception $e) {
-            Log::error('Error fetching apartment: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to fetch apartment'], 500);
-        }
-    }    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateApartmentRequest $request, Apartment $apartment)
-    {
-        try {
-            // Check if the authenticated user owns this apartment
-            if (auth()->user()->id !== $apartment->user_id) {
-                return response()->json(['error' => 'Unauthorized'], 403);
-            }
-
-            // Get validated data only
-            $validatedData = $request->validated();
-
-            // Auto-update address when governorate or city changes
-            if (isset($validatedData['governorate_id']) || isset($validatedData['city_id'])) {
-                // Load relationships to get names
-                $apartment->load(['governorate', 'city']);
-
-                // Get the new governorate and city names
-                $governorateName = null;
-                $cityName = null;
-
-                if (isset($validatedData['governorate_id'])) {
-                    $governorate = \App\Models\Governorate::find($validatedData['governorate_id']);
-                    $governorateName = $governorate ? $governorate->name : null;
-                } else {
-                    $governorateName = $apartment->governorate ? $apartment->governorate->name : null;
-                }
-
-                if (isset($validatedData['city_id'])) {
-                    $city = \App\Models\City::find($validatedData['city_id']);
-                    $cityName = $city ? $city->name : null;
-                } else {
-                    $cityName = $apartment->city ? $apartment->city->name : null;
-                }
-
-                // Construct new address
-                $newAddressParts = array_filter([$cityName, $governorateName]);
-                if (!empty($newAddressParts)) {
-                    $validatedData['address'] = implode(', ', $newAddressParts);
-                }
-            }
-
-            // Handle image updates separately
-            for ($i = 1; $i <= 5; $i++) {
-                if ($request->hasFile('image' . $i)) {
-                    // Delete old image if exists
-                    if ($apartment->{'image' . $i}) {
-                        Storage::disk('public')->delete($apartment->{'image' . $i});
-                    }
-                    $validatedData['image' . $i] = $request->file('image' . $i)->store('apartments', 'public');
-                }
-            }
-
-            // Only update if there's data to update
-            if (!empty($validatedData)) {
-                $apartment->update($validatedData);
-            }
-
-            // Load relationships
-            $apartment->load(['user', 'governorate', 'city']);
-
-            return response()->json([
-                'message' => 'تم تحديث الشقة بنجاح',
-                'apartment' => new ApartmentResource($apartment)
+                'message' => 'لا توجد شقق لعرضها',
+                'data' => []
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error updating apartment: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to update apartment'], 500);
         }
-    }
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Apartment $apartment)
-    {
-        try {
-            // Check if the authenticated user owns this apartment
-            if (auth()->user()->id !== $apartment->user_id) {
-                return response()->json(['error' => 'Unauthorized'], 403);
-            }
 
-            // Delete images from storage
-            for ($i = 1; $i <= 5; $i++) {
-                if ($apartment->{'image' . $i}) {
-                    Storage::disk('public')->delete($apartment->{'image' . $i});
-                }
-            }
-
-            $apartment->delete();
-
-            return response()->json(['message' => 'تم حذف الشقة بنجاح'], 200);
-        } catch (\Exception $e) {
-            Log::error('Error deleting apartment: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to delete apartment'], 500);
-        }
+        return response()->json([
+            'data' => ApartmentResource::collection($apartments)
+        ]);
     }
 
-    /**
-     * Get apartments owned by the authenticated user.
-     */
     public function myApartments(Request $request)
     {
-        try {
-            $apartments = Apartment::with(['governorate', 'city'])
-                ->where('user_id', auth()->user()->id)
-                ->paginate(10);
+        $user = $request->user();
+        $apartments = $user->apartments()->with(['governorate', 'city'])->get();
 
-            return response()->json($apartments, 200);
-        } catch (\Exception $e) {
-            Log::error('Error fetching user apartments: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to fetch apartments'], 500);
+        if ($apartments->isEmpty()) {
+            return response()->json([
+                'message' => 'لا توجد شقق خاصة بك',
+                'data' => []
+            ], 200);
         }
+
+        return response()->json([
+            'data' => ApartmentResource::collection($apartments)
+        ]);
+    }
+
+    public function store(StoreApartmentRequest $request)
+    {
+        $apartment = $request->user()->apartments()->create($request->validated());
+
+        return response()->json([
+            'message' => 'تم إنشاء الشقة بنجاح',
+            'apartment' => new ApartmentResource($apartment)
+        ], 201);
+    }
+
+    public function show(Request $request, $id)
+    {
+        $apartment = Apartment::with(['governorate', 'city', 'user'])->find($id);
+
+        if (!$apartment) {
+            return response()->json(['message' => 'الشقة غير موجودة'], 404);
+        }
+
+        return new ApartmentResource($apartment);
+    }
+
+    public function update(UpdateApartmentRequest $request, $id)
+    {
+        $apartment = Apartment::find($id);
+
+        if (!$apartment) {
+            return response()->json(['message' => 'الشقة غير موجودة'], 404);
+        }
+
+        // Check if the authenticated user is the owner of the apartment
+        if ($apartment->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'غير مصرح لك بتعديل هذه الشقة'], 403);
+        }
+
+        $apartment->update($request->validated());
+
+        return response()->json([
+            'message' => 'تم تعديل الشقة بنجاح',
+            'apartment' => new ApartmentResource($apartment)
+        ]);
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        $apartment = Apartment::find($id);
+
+        if (!$apartment) {
+            return response()->json(['message' => 'الشقة غير موجودة'], 404);
+        }
+
+        // Check if the authenticated user is the owner of the apartment
+        if ($apartment->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'غير مصرح لك بحذف هذه الشقة'], 403);
+        }
+
+        $apartment->delete();
+
+        return response()->json(['message' => 'تم حذف الشقة بنجاح']);
+    }
+
+    public function checkAvailability(Request $request, $id)
+    {
+        $apartment = Apartment::find($id);
+
+        if (!$apartment) {
+            return response()->json(['message' => 'الشقة غير موجودة'], 404);
+        }
+
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        // Check if there are any existing bookings that conflict with the requested dates
+        $existingBooking =
+            \App\Models\Booking::where('apartment_id', $id)
+            ->where(function ($query) use ($request) {
+                $query->whereBetween('start_date', [$request->start_date, $request->end_date])
+                      ->orWhereBetween('end_date', [$request->start_date, $request->end_date])
+                      ->orWhere(function ($query) use ($request) {
+                          $query->where('start_date', '<=', $request->start_date)
+                                ->where('end_date', '>=', $request->end_date);
+                      });
+            })
+            ->where('status', '!=', 'rejected')
+            ->where('status', '!=', 'cancelled')
+            ->first();
+
+        if ($existingBooking) {
+            return response()->json([
+                'available' => false,
+                'message' => 'الشقة محجوزة من ' . $existingBooking->start_date->format('Y-m-d') . ' إلى ' . $existingBooking->end_date->format('Y-m-d'),
+                'existing_booking' => [
+                    'start_date' => $existingBooking->start_date->format('Y-m-d'),
+                    'end_date' => $existingBooking->end_date->format('Y-m-d'),
+                    'status' => $existingBooking->status
+                ]
+            ], 200);
+        }
+
+        return response()->json([
+            'available' => true,
+            'message' => 'الشقة متاحة في الفترة المحددة'
+        ], 200);
     }
 }

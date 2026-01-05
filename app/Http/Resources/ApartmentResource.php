@@ -7,29 +7,22 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ApartmentResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
-            // 'user_id' => $this->user_id,
             'user_name' => $this->whenLoaded('user', fn() => $this->user->first_name . ' ' . $this->user->last_name),
-            'title' => $this->title,
-            'description' => $this->description,
-            'area' => $this->area,
+            'user_id' => $this->user_id,
             'governorate_name' => $this->whenLoaded('governorate', fn() => $this->governorate->name),
+            'governorate_id' => $this->governorate_id,
             'city_name' => $this->whenLoaded('city', fn() => $this->city->name),
-            'address' => $this->address,
+            'city_id' => $this->city_id,
+            'title' => $this->title,
+            'area' => $this->area,
+            'description' => $this->description,
             'daily_price' => $this->daily_price,
-            'image1' => $this->image1,
-            'image2' => $this->image2,
-            'image3' => $this->image3,
-            'image4' => $this->image4,
-            'image5' => $this->image5,
+            'address' => $this->address,
+            'created_at' => $this->created_at,
         ];
     }
 }

@@ -35,10 +35,11 @@ class UserController extends Controller
                 'password' => Hash::make($request->password),
                 'profile_image' => $profilePath,
                 'id_card' => $idCardPath,
+                'status' => 'pending', // Set status to pending for admin approval
             ]);
 
             return response()->json([
-                'message' => 'Registration successful',
+                'message' => 'تم تسجيل طلبك بنجاح. يمكنك تسجيل الدخول عند الموافقة عليه من قبل الإدارة.',
                 'user' => new UserResource($user)
             ], 201);
 
@@ -48,14 +49,28 @@ class UserController extends Controller
     public function login(LoginUserRequest $request)
     {
             if (!Auth::attempt($request->only('phone', 'password'))) {
-                return response()->json(['message' => 'Invalid phone or password'], 401);
+                return response()->json(['message' => 'رقم الهاتف أو كلمة المرور غير صحيحة'], 401);
             }
 
             $user = Auth::user();
+
+            // التحقق من حالة المستخدم
+            if ($user->status !== 'approved') {
+                if ($user->status === 'pending') {
+                    return response()->json([
+                        'message' => 'لم يتم قبول طلبك بعد. الرجاء الانتظار حتى موافقة الإدارة.'
+                    ], 403);
+                } elseif ($user->status === 'rejected') {
+                    return response()->json([
+                        'message' => 'تم رفض طلبك. لا يمكن تسجيل الدخول.'
+                    ], 403);
+                }
+            }
+
             $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([
-                'message' => 'Login successful',
+                'message' => 'تم تسجيل الدخول بنجاح',
                 'user' => new UserResource($user),
                 'token' => $token
             ], 200);
