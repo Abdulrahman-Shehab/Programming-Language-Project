@@ -4,54 +4,39 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Apartment extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'user_id',
         'governorate_id',
         'city_id',
-        'address',
         'title',
         'area',
         'description',
         'daily_price',
-        'image1',
-        'image2',
-        'image3',
-        'image4',
-        'image5',
+        'address',
     ];
 
-    /**
-     * Get the user that owns the apartment.
-     */
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the governorate that owns the apartment.
-     */
-    public function governorate(): BelongsTo
+    public function governorate()
     {
         return $this->belongsTo(Governorate::class);
     }
 
-    /**
-     * Get the city that owns the apartment.
-     */
-    public function city(): BelongsTo
+    public function city()
     {
         return $this->belongsTo(City::class);
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
     }
 }
