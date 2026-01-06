@@ -11,12 +11,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
-})->middleware('auth:sanctum');
+})->middleware(['auth:sanctum', 'check.user.status']);
 
 
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
-Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:sanctum');
+Route::post('/logout', [UserController::class, 'logout'])->middleware(['auth:sanctum', 'check.user.status']);
 
 // Governorate and City routes
 Route::apiResource('governorates', GovernorateController::class);
