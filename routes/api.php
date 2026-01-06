@@ -25,24 +25,19 @@ Route::get('governorates/{governorate}/cities', [CityController::class, 'index']
 
 // Apartment routes
 Route::get('apartments', [ApartmentController::class, 'index']);
-Route::get('my-apartments', [ApartmentController::class, 'myApartments'])->middleware(['auth:sanctum', 'check.user.status']);
-Route::apiResource('apartments', ApartmentController::class)->except('index')->middleware(['auth:sanctum', 'check.user.status']);
-Route::get('apartments/{id}/check-availability', [ApartmentController::class, 'checkAvailability'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::apiResource('apartments', ApartmentController::class)->except('index')->middleware('auth:sanctum');
 
 // Booking routes
-Route::post('apartments/{apartmentId}/book', [BookingController::class, 'createBooking'])->middleware(['auth:sanctum', 'check.user.status']);
-Route::put('bookings/{id}/modify', [BookingController::class, 'modifyBooking'])->middleware(['auth:sanctum', 'check.user.status']);
-Route::put('bookings/{id}/cancel', [BookingController::class, 'cancelBooking'])->middleware(['auth:sanctum', 'check.user.status']);
-Route::put('bookings/{id}/approve', [BookingController::class, 'confirmBooking'])->middleware(['auth:sanctum', 'check.user.status']);
-Route::put('bookings/{id}/confirm', [BookingController::class, 'confirmBooking'])->middleware(['auth:sanctum', 'check.user.status']);
-Route::put('bookings/{id}/reject', [BookingController::class, 'rejectBooking'])->middleware(['auth:sanctum', 'check.user.status']);
-Route::get('bookings', [BookingController::class, 'userBookings'])->middleware(['auth:sanctum', 'check.user.status']);
-Route::get('bookings/user', [BookingController::class, 'userBookings'])->middleware(['auth:sanctum', 'check.user.status']);
-Route::get('bookings/owner', [BookingController::class, 'ownerBookings'])->middleware(['auth:sanctum', 'check.user.status']);
-Route::get('my-bookings', [BookingController::class, 'ownerBookings'])->middleware(['auth:sanctum', 'check.user.status']);
-Route::get('apartments/{apartmentId}/bookings', [BookingController::class, 'apartmentBookings'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::post('apartments/{apartmentId}/book', [BookingController::class, 'createBooking'])->middleware('auth:sanctum');
+Route::put('bookings/{id}/modify', [BookingController::class, 'modifyBooking'])->middleware('auth:sanctum');
+Route::put('bookings/{id}/cancel', [BookingController::class, 'cancelBooking'])->middleware('auth:sanctum');
+Route::put('bookings/{id}/confirm', [BookingController::class, 'confirmBooking'])->middleware('auth:sanctum');
+Route::put('bookings/{id}/reject', [BookingController::class, 'rejectBooking'])->middleware('auth:sanctum');
+Route::get('bookings', [BookingController::class, 'userBookings'])->middleware('auth:sanctum');
+Route::get('my-bookings', [BookingController::class, 'ownerBookings'])->middleware('auth:sanctum');
+Route::get('apartments/{apartmentId}/bookings', [BookingController::class, 'apartmentBookings'])->middleware('auth:sanctum');
 
 // Wallet routes
-Route::get('wallet', [WalletController::class, 'showBalance'])->middleware(['auth:sanctum', 'check.user.status']);
-Route::post('wallet/add-funds', [WalletController::class, 'addFunds'])->middleware(['auth:sanctum', 'check.user.status']);
+Route::get('wallet', [WalletController::class, 'showBalance'])->middleware('auth:sanctum');
+Route::post('wallet/add-funds', [WalletController::class, 'addFunds'])->middleware('auth:sanctum');
 
